@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Optimus — Crawling & Parsing Framework Docs</title>
+<style>
+  :root {
+    --bg:#0f1117;--bg2:#161b27;--bg3:#1c2333;--bg4:#222a3b;
+    --border:#2a3349;--border2:#344060;
+    --text:#e2e8f4;--text2:#8fa3c8;--text3:#5a6d8a;
+    --accent:#4f8ef7;--accent2:#3a6fd4;
+    --green:#22c55e;--green-bg:#0d2218;--green-border:#1a4d2e;
+    --amber:#f59e0b;--amber-bg:#231a05;--amber-border:#4a3308;
+    --red:#ef4444;--red-bg:#200b0b;--red-border:#4a1515;
+    --blue-bg:#0b1628;--blue-border:#1a2e55;
+    --purple:#a78bfa;--purple-bg:#130d24;
+    --radius:8px;--radius-lg:12px;
+    --mono:'SF Mono','Fira Code','Cascadia Code',monospace;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.6;font-size:15px}
+  .app{display:flex;min-height:100vh}
+  .sidebar{width:270px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;overflow-y:auto;z-index:100;transition:transform .25s}
+  .sidebar-logo{padding:20px 20px 16px;border-bottom:1px solid var(--border)}
+  .logo-badge{display:inline-block;background:var(--accent);color:#fff;font-size:11px;font-weight:700;letter-spacing:.08em;padding:2px 8px;border-radius:4px;margin-bottom:6px}
+  .sidebar-logo h1{font-size:17px;font-weight:600;color:var(--text)}
+  .sidebar-logo p{font-size:12px;color:var(--text3);margin-top:2px}
+  .sidebar-nav{padding:10px 0}
+  .nav-group-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;padding:10px 20px 4px}
+  .nav-item{display:flex;align-items:center;gap:8px;padding:7px 20px;font-size:13px;color:var(--text2);cursor:pointer;border-left:2px solid transparent;transition:all .15s}
+  .nav-item:hover{background:var(--bg3);color:var(--text)}
+  .nav-item.active{background:var(--blue-bg);color:var(--accent);border-left-color:var(--accent)}
+  .nav-icon{font-size:14px;width:16px;flex-shrink:0}
+  .main{margin-left:270px;flex:1;min-width:0}
+  .topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+  .topbar-left{display:flex;align-items:center;gap:10px}
+  .topbar-title{font-size:14px;font-weight:500;color:var(--text)}
+  .topbar-pill{font-size:11px;padding:2px 8px;border-radius:10px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
+  .menu-btn{display:none;background:none;border:1px solid var(--border);color:var(--text2);padding:6px 10px;border-radius:var(--radius);cursor:pointer;font-size:16px}
+  .content{padding:32px;max-width:920px}
+  .section{display:none}.section.active{display:block}
+  .section-header{margin-bottom:28px}
+  .section-header h2{font-size:26px;font-weight:600;color:var(--text);margin-bottom:6px}
+  .section-header p{font-size:14px;color:var(--text2);line-height:1.6}
+  .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:16px}
+  .card h3{font-size:14px;font-weight:600;color:var(--text);margin-bottom:10px}
+  .card p{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:10px}
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:12px 0}
+  .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:12px 0}
+  .info-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px}
+  .info-card .ik{font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:500;text-transform:uppercase;letter-spacing:.05em}
+  .info-card .iv{font-size:13px;color:var(--text);line-height:1.5}
+  .info-card code{font-family:var(--mono);font-size:11px;background:var(--bg4);padding:1px 5px;border-radius:3px;color:#93c5fd}
+  .callout{display:flex;gap:10px;align-items:flex-start;border-radius:var(--radius);padding:12px 14px;margin:12px 0;font-size:13px;line-height:1.5}
+  .callout-warn{background:var(--amber-bg);border:1px solid var(--amber-border);color:var(--amber)}
+  .callout-ok{background:var(--green-bg);border:1px solid var(--green-border);color:var(--green)}
+  .callout-info{background:var(--blue-bg);border:1px solid var(--blue-border);color:#93c5fd}
+  .callout-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+  .code-wrap{position:relative;margin:12px 0}
+  pre{font-family:var(--mono);font-size:12px;background:#080c14;border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;overflow-x:auto;line-height:1.7;color:#cdd9f4;white-space:pre}
+  .copy-btn{position:absolute;top:8px;right:8px;font-size:11px;padding:3px 10px;border:1px solid var(--border2);border-radius:5px;background:var(--bg3);color:var(--text2);cursor:pointer;transition:all .15s;z-index:2}
+  .copy-btn:hover{background:var(--bg4);color:var(--text)}
+  .copy-btn.copied{color:var(--green);border-color:var(--green-border)}
+  .c-comment{color:#4a5f7a}.c-key{color:#93c5fd}.c-val{color:#86efac}
+  .c-str{color:#fda4af}.c-kw{color:#c084fc}.c-fn{color:#fbbf24}.c-num{color:#67e8f9}
+  .v-steps{display:flex;flex-direction:column;gap:0}
+  .v-step{display:flex;gap:16px;align-items:flex-start}
+  .v-step-left{display:flex;flex-direction:column;align-items:center;width:32px;flex-shrink:0}
+  .v-step-num{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;background:var(--blue-bg);color:var(--accent);border:1px solid var(--blue-border);flex-shrink:0}
+  .v-step-line{width:1px;flex:1;min-height:24px;background:var(--border);margin:4px 0}
+  .v-step-body{padding-bottom:24px;flex:1;min-width:0}
+  .v-step-body h4{font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px}
+  .v-step-body p{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:8px}
+  .flow{display:flex;align-items:center;gap:0;flex-wrap:wrap;margin:16px 0}
+  .flow-box{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;font-size:12px;font-weight:500;color:var(--text);flex-shrink:0}
+  .flow-box.blue{background:var(--blue-bg);border-color:var(--blue-border);color:#93c5fd}
+  .flow-box.green{background:var(--green-bg);border-color:var(--green-border);color:var(--green)}
+  .flow-box.amber{background:var(--amber-bg);border-color:var(--amber-border);color:var(--amber)}
+  .flow-box.purple{background:var(--purple-bg);border-color:#2d1f4e;color:var(--purple)}
+  .flow-sub{font-size:10px;color:var(--text3);margin-top:3px;font-weight:400}
+  .flow-arrow{color:var(--text3);padding:0 6px;font-size:16px;flex-shrink:0}
+  .badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600;margin-left:5px;vertical-align:middle}
+  .b-green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
+  .b-amber{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border)}
+  .b-red{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)}
+  .b-blue{background:var(--blue-bg);color:#93c5fd;border:1px solid var(--blue-border)}
+  .label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin:20px 0 8px}
+  .doc-table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0}
+  .doc-table th{text-align:left;padding:8px 12px;border-bottom:1px solid var(--border2);color:var(--text3);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+  .doc-table td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top;line-height:1.5}
+  .doc-table tr:last-child td{border-bottom:none}
+  .doc-table .err{color:var(--red);font-family:var(--mono);font-size:11px}
+  .doc-table .fix{color:var(--green)}
+  .file-tree{font-family:var(--mono);font-size:12px;line-height:2;background:#080c14;border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;margin:12px 0}
+  .ft-dir{color:#93c5fd}.ft-file{color:#cdd9f4}.ft-cmt{color:#4a5f7a}
+  .pipeline{display:flex;gap:0;margin:16px 0;overflow-x:auto}
+  .pipe-step{flex:1;min-width:90px;padding:14px 10px;text-align:center;background:var(--bg3);border:1px solid var(--border);font-size:12px}
+  .pipe-step:first-child{border-radius:var(--radius) 0 0 var(--radius)}
+  .pipe-step:last-child{border-radius:0 var(--radius) var(--radius) 0}
+  .pipe-step+.pipe-step{border-left:none}
+  .pipe-step .pn{font-size:10px;color:var(--text3);margin-bottom:4px}
+  .pipe-step .pt{font-weight:600;color:var(--text)}
+  .env-row{display:flex;gap:12px;margin:16px 0;flex-wrap:wrap}
+  .env-box{flex:1;min-width:160px;border-radius:var(--radius);padding:14px 16px;border:1px solid var(--border)}
+  .env-box .et{font-size:13px;font-weight:600;margin-bottom:6px}
+  .env-box .ed{font-size:12px;color:var(--text2);line-height:1.5}
+  .env-feat{background:var(--blue-bg);border-color:var(--blue-border)}
+  .env-feat .et{color:#93c5fd}
+  .env-pre{background:var(--amber-bg);border-color:var(--amber-border)}
+  .env-pre .et{color:var(--amber)}
+  .env-prod{background:var(--green-bg);border-color:var(--green-border)}
+  .env-prod .et{color:var(--green)}
+  .exc-tree{font-family:var(--mono);font-size:12px;line-height:2;background:#080c14;border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;margin:12px 0;color:#cdd9f4}
+  .exc-base{color:#c084fc}.exc-child{color:#fbbf24}
+  .checklist{list-style:none;display:flex;flex-direction:column;gap:8px;margin:12px 0}
+  .checklist li{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--text2)}
+  .checklist li::before{content:'✓';color:var(--green);font-weight:700;flex-shrink:0;margin-top:1px}
+  .search-wrap{position:relative;margin-bottom:4px}
+  .search-input{width:100%;padding:8px 12px 8px 34px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:13px;outline:none;font-family:var(--sans)}
+  .search-input:focus{border-color:var(--border2)}
+  .search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px}
+
+  /* ── Setup Guide stepper ── */
+  .sg-wrap{padding:4px 0}
+  .sg-progress{display:flex;align-items:center;gap:0;margin-bottom:22px;overflow-x:auto;padding-bottom:4px}
+  .sg-prog-step{display:flex;align-items:center;gap:0;flex-shrink:0}
+  .sg-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;border:1px solid var(--border);background:var(--bg3);color:var(--text3);cursor:pointer;transition:all .2s;flex-shrink:0}
+  .sg-dot.done{background:var(--green-bg);border-color:var(--green-border);color:var(--green)}
+  .sg-dot.active{background:var(--blue-bg);border-color:var(--blue-border);color:var(--accent)}
+  .sg-line{width:16px;height:1px;background:var(--border);flex-shrink:0}
+  .sg-line.done{background:var(--green-border)}
+  .sg-step-header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+  .sg-step-num{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;background:var(--blue-bg);color:var(--accent);border:1px solid var(--blue-border);flex-shrink:0}
+  .sg-step-title{font-size:17px;font-weight:600;color:var(--text)}
+  .sg-step-sub{font-size:13px;color:var(--text2);margin-top:2px}
+  .sg-nav{display:flex;gap:10px;margin-top:20px;justify-content:space-between;align-items:center}
+  .sg-nav button{padding:8px 20px;font-size:13px;border-radius:var(--radius);cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text);transition:all .15s;font-family:var(--sans)}
+  .sg-nav button:hover{background:var(--bg3)}
+  .sg-nav button.primary{background:var(--blue-bg);border-color:var(--blue-border);color:var(--accent)}
+  .sg-nav button:disabled{opacity:.3;cursor:not-allowed}
+  .sg-counter{font-size:12px;color:var(--text3)}
+
+  /* inner stepper cards (used inside setup guide steps) */
+  .section-inner .warn{display:flex;gap:8px;align-items:flex-start;background:var(--amber-bg);border:1px solid var(--amber-border);border-radius:var(--radius);padding:10px 12px;margin:8px 0;font-size:12px;color:var(--amber);line-height:1.5}
+  .section-inner .tip{display:flex;gap:8px;align-items:flex-start;background:var(--green-bg);border:1px solid var(--green-border);border-radius:var(--radius);padding:10px 12px;margin:8px 0;font-size:12px;color:var(--green);line-height:1.5}
+  .section-inner .info{display:flex;gap:8px;align-items:flex-start;background:var(--blue-bg);border:1px solid var(--blue-border);border-radius:var(--radius);padding:10px 12px;margin:8px 0;font-size:12px;color:#93c5fd;line-height:1.5}
+  .section-inner .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:10px 0}
+  .section-inner .card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:0}
+  .section-inner .card .ck{font-size:11px;color:var(--text3);margin-bottom:4px;font-weight:500}
+  .section-inner .card .cv{font-size:12px;color:var(--text);line-height:1.5}
+  .section-inner .card code,.section-inner .info-card code{font-family:var(--mono);font-size:11px;background:var(--bg4);padding:1px 4px;border-radius:3px;color:#93c5fd}
+  .section-inner .code{font-family:var(--mono);font-size:11px;background:#080c14;border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin:8px 0;line-height:1.7;color:#cdd9f4;overflow-x:auto;white-space:pre;position:relative}
+  .section-inner .badge.b-ok{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);font-size:10px;padding:2px 6px;border-radius:10px;font-weight:600}
+  .section-inner .badge.b-warn{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border);font-size:10px;padding:2px 6px;border-radius:10px;font-weight:600}
+  .section-inner .file-tree{font-family:var(--mono);font-size:11px;line-height:1.9;background:#080c14;border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin:8px 0}
+  .section-inner .ft-dir{color:#93c5fd}.section-inner .ft-file{color:#cdd9f4}.section-inner .ft-comment{color:#4a5f7a}
+  .section-inner .checklist{list-style:none;display:flex;flex-direction:column;gap:6px;margin:8px 0}
+  .section-inner .checklist li{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text2)}
+  .section-inner .checklist li i{color:var(--green);flex-shrink:0}
+  .section-inner .label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:14px 0 6px}
+  .section-inner .section{display:block}
+
+  ::-webkit-scrollbar{width:6px;height:6px}
+  ::-webkit-scrollbar-track{background:var(--bg)}
+  ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+  hr{border:none;border-top:1px solid var(--border);margin:24px 0}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99}
+  .overlay.open{display:block}
+
+  @media(max-width:768px){
+    .sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}
+    .main{margin-left:0}.topbar{padding:12px 16px}.content{padding:20px 16px}
+    .menu-btn{display:block}
+    .grid2,.grid3{grid-template-columns:1fr}
+    .flow{flex-direction:column;align-items:flex-start;gap:4px}
+    .flow-arrow{transform:rotate(90deg);padding:4px 0}
+    .pipeline{flex-direction:column}
+    .pipe-step:first-child{border-radius:var(--radius) var(--radius) 0 0}
+    .pipe-step:last-child{border-radius:0 0 var(--radius) var(--radius)}
+    .pipe-step+.pipe-step{border-left:1px solid var(--border);border-top:none}
+    .env-row{flex-direction:column}
+  }
+</style>
+</head>
+<body>
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+<div class="app">
+
+<!-- ─── Sidebar ─── -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-badge">OPTIMUS</div>
+    <h1>Framework Docs</h1>
+    <p>Crawling &amp; Parsing Guide</p>
+  </div>
+  <div style="padding:12px 12px 8px">
+    <div class="search-wrap">
+      <span class="search-icon">⌕</span>
+      <input class="search-input" id="search-input" placeholder="Search sections…" oninput="filterNav(this.value)">
+    </div>
+  </div>
+  <div class="sidebar-nav" id="nav-list">
+    <div class="nav-group-label">Overview</div>
+    <a class="nav-item active" onclick="show('overview')" data-label="Overview Introduction Flow"><span class="nav-icon">🗺</span> Overview</a>
+
+    <div class="nav-group-label">📋 Setup Guide (Step-by-Step)</div>
+    <a class="nav-item" onclick="show('setup-guide');sgGoTo(0)" data-label="Setup Guide Step 1 Prerequisites Install"><span class="nav-icon">①</span> Prerequisites</a>
+    <a class="nav-item" onclick="show('setup-guide');sgGoTo(1)" data-label="Setup Guide Step 2 GitLab Repository"><span class="nav-icon">②</span> Create GitLab Repo</a>
+    <a class="nav-item" onclick="show('setup-guide');sgGoTo(2)" data-label="Setup Guide Step 3 Clone Branch"><span class="nav-icon">③</span> Clone &amp; Branch</a>
+    <a class="nav-item" onclick="show('setup-guide');sgGoTo(3)" data-label="Setup Guide Step 4 Virtual Env Framework Install"><span class="nav-icon">④</span> Venv &amp; Install</a>
+    <a class="nav-item" onclick="show('setup-guide');sgGoTo(4)" data-label="Setup Guide Step 5 Skeleton Generate"><span class="nav-icon">⑤</span> Project Skeleton</a>
+    <a class="nav-item" onclick="show('setup-guide');sgGoTo(5)" data-label="Setup Guide Step 6 Requirements Dependencies"><span class="nav-icon">⑥</span> Requirements</a>
+    <a class="nav-item" onclick="show('setup-guide');sgGoTo(6)" data-label="Setup Guide Step 7 Pre-commit Hooks"><span class="nav-icon">⑦</span> Pre-commit Hooks</a>
+    <a class="nav-item" onclick="show('setup-guide');sgGoTo(7)" data-label="Setup Guide Step 8 Config Env"><span class="nav-icon">⑧</span> config.env</a>
+    <a class="nav-item" onclick="show('setup-guide');sgGoTo(8)" data-label="Setup Guide Step 9 local_config YAML"><span class="nav-icon">⑨</span> local_config.yml</a>
+    <a class="nav-item" onclick="show('setup-guide');sgGoTo(9)" data-label="Setup Guide Step 10 Spider Parser Class Code"><span class="nav-icon">⑩</span> Write Spider / Parser</a>
+    <a class="nav-item" onclick="show('setup-guide');sgGoTo(10)" data-label="Setup Guide Step 11 Run Local Verify"><span class="nav-icon">⑪</span> Run Locally</a>
+    <a class="nav-item" onclick="show('setup-guide');sgGoTo(11)" data-label="Setup Guide Step 12 Commit Push Pipeline Deploy"><span class="nav-icon">⑫</span> Commit &amp; Deploy</a>
+
+    <div class="nav-group-label">Deep Reference</div>
+    <a class="nav-item" onclick="show('crawling')" data-label="Crawling Spider Request Types"><span class="nav-icon">🕷</span> Crawling In-Depth</a>
+    <a class="nav-item" onclick="show('parsing')" data-label="Parsing Parser ParserAbstract LxmlParser"><span class="nav-icon">🔍</span> Parsing In-Depth</a>
+    <a class="nav-item" onclick="show('bot-protection')" data-label="Bot Protection Captcha Proxy CurlCffi"><span class="nav-icon">🛡</span> Bot Protection</a>
+    <a class="nav-item" onclick="show('cookies')" data-label="Cookies Session Management bind_proxy"><span class="nav-icon">🍪</span> Session &amp; Cookies</a>
+    <a class="nav-item" onclick="show('data-types')" data-label="Data Types Models Pydantic Task Shop Request Response pf_chain"><span class="nav-icon">📦</span> Data Types</a>
+    <a class="nav-item" onclick="show('toolkit')" data-label="Toolkit Comparer Tracer TSender"><span class="nav-icon">🔧</span> Optimus Toolkit</a>
+    <a class="nav-item" onclick="show('pipeline')" data-label="Pipeline GitLab CI CD Deploy SonarQube"><span class="nav-icon">🚀</span> CI/CD &amp; Deploy</a>
+    <a class="nav-item" onclick="show('cr-tree')" data-label="CR Tree Scheduling DAG CRON site_tree"><span class="nav-icon">🌳</span> CR Tree Scheduling</a>
+    <a class="nav-item" onclick="show('errors')" data-label="Errors Debugging Troubleshooting Import Proxy Timeout"><span class="nav-icon">🔥</span> Errors &amp; Fixes</a>
+    <a class="nav-item" onclick="show('example')" data-label="Real Example CarPhoneWarehouse Walmart end to end"><span class="nav-icon">📋</span> Real Example</a>
+  </div>
+</nav>
+
+<!-- ─── Main ─── -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="menu-btn" onclick="openSidebar()">☰</button>
+      <span class="topbar-title" id="topbar-title">Overview</span>
+      <span class="topbar-pill">Python Framework</span>
+    </div>
+    <div style="font-size:12px;color:var(--text3)">Optimus Docs v2.0</div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══════════ OVERVIEW ══════════ -->
+    <div class="section active" id="sec-overview">
+      <div class="section-header">
+        <h2>Optimus — Complete Framework Overview</h2>
+        <p>Internal Crawling &amp; Parsing Framework for data acquisition from retailer websites. Two frameworks, one pipeline.</p>
+      </div>
+      <div class="callout callout-info"><span class="callout-icon">ℹ</span><span>This doc is under migration to Confluence. Check both sources if in doubt.</span></div>
+      <div class="label">How the two frameworks connect end-to-end</div>
+      <div class="flow">
+        <div class="flow-box amber"><div>local_config.yml</div><div class="flow-sub">Tasks + proxies + shop</div></div><div class="flow-arrow">→</div>
+        <div class="flow-box green"><div>Crawling Framework</div><div class="flow-sub">Spider class fetches pages</div></div><div class="flow-arrow">→</div>
+        <div class="flow-box amber"><div>.pf_chain file</div><div class="flow-sub">Raw HTML/JSON stored</div></div><div class="flow-arrow">→</div>
+        <div class="flow-box blue"><div>Parsing Framework</div><div class="flow-sub">ParserAbstract extracts</div></div><div class="flow-arrow">→</div>
+        <div class="flow-box green"><div>Parquet → GCS</div><div class="flow-sub">Structured output</div></div>
+      </div>
+      <div class="card">
+        <h3>Two primary components</h3>
+        <div class="grid2">
+          <div class="info-card"><div class="ik">Crawling Framework <span class="badge b-blue">DAGS-5839</span></div><div class="iv">Fetches raw data from retailer websites. Manages HTTP requests, browser automation, proxies, and rate limiting. Output: <code>.pf_chain</code> files.</div></div>
+          <div class="info-card"><div class="ik">Parsing Framework <span class="badge b-blue">DAGS-6010</span></div><div class="iv">Processes <code>.pf_chain</code> files. Extracts structured info from raw HTML/JSON. Output: structured data in Parquet format saved to GCS.</div></div>
+        </div>
+      </div>
+      <div class="label">All phases at a glance</div>
+      <div class="card">
+        <div class="label" style="margin-top:0">Phase 1 — Setup</div>
+        <div class="flow"><div class="flow-box">GitLab repo</div><div class="flow-arrow">→</div><div class="flow-box">Clone + venv</div><div class="flow-arrow">→</div><div class="flow-box">pip install framework</div><div class="flow-arrow">→</div><div class="flow-box">create skeleton</div><div class="flow-arrow">→</div><div class="flow-box">pre-commit</div></div>
+        <div class="label">Phase 2 — Configuration</div>
+        <div class="flow"><div class="flow-box amber">config.env</div><div class="flow-arrow">→</div><div class="flow-box amber">local_config.yml</div><div class="flow-arrow">→</div><div class="flow-box amber">Pydantic validation</div></div>
+        <div class="label">Phase 3 — Crawl</div>
+        <div class="flow"><div class="flow-box green">start_&lt;module&gt;_request()</div><div class="flow-arrow">→</div><div class="flow-box green">yield Request</div><div class="flow-arrow">→</div><div class="flow-box green">Bot protection</div><div class="flow-arrow">→</div><div class="flow-box green">validate_response()</div><div class="flow-arrow">→</div><div class="flow-box green">callback → .pf_chain</div></div>
+        <div class="label">Phase 4 — Parse</div>
+        <div class="flow"><div class="flow-box blue">.pf_chain input</div><div class="flow-arrow">→</div><div class="flow-box blue">start_parse_&lt;module&gt;()</div><div class="flow-arrow">→</div><div class="flow-box blue">LxmlParser / Bs4 / AI</div><div class="flow-arrow">→</div><div class="flow-box blue">ParsedResponse → Parquet</div></div>
+        <div class="label">Phase 5 — Deploy</div>
+        <div class="flow"><div class="flow-box">Build Docker</div><div class="flow-arrow">→</div><div class="flow-box">Lint + Tests</div><div class="flow-arrow">→</div><div class="flow-box green">Feature → Pre-prod → Prod</div></div>
+      </div>
+      <div class="callout callout-ok"><span class="callout-icon">→</span><span>New here? Start with the <strong>Setup Guide</strong> in the left sidebar — it walks you through all 12 steps in order.</span></div>
+    </div>
+
+    <!-- ══════════ SETUP GUIDE (12-step stepper) ══════════ -->
+    <div class="section" id="sec-setup-guide">
+      <div class="section-header">
+        <h2>Setup Guide</h2>
+        <p>Complete 12-step walkthrough — from prerequisites to production deploy. Follow in order.</p>
+      </div>
+      <div class="sg-wrap">
+        <div class="sg-progress" id="sg-progress"></div>
+        <div id="sg-content" class="section-inner"></div>
+        <div class="sg-nav">
+          <button id="sg-prev" onclick="sgNavigate(-1)" disabled>← Previous</button>
+          <span class="sg-counter" id="sg-counter"></span>
+          <button id="sg-next" class="primary" onclick="sgNavigate(1)">Next →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ CRAWLING ══════════ -->
+    <div class="section" id="sec-crawling">
+      <div class="section-header"><h2>Crawling In-Depth</h2><p>Spider class internals — entry points, request types, validation, pagination, and exception hierarchy.</p></div>
+      <div class="label">Spider skeleton — main.py</div>
+      <div class="code-wrap"><pre><span class="c-kw">from</span> crawling_framework <span class="c-kw">import</span> Spider, Request, Response
+<span class="c-kw">from</span> crawling_framework.requests <span class="c-kw">import</span> CurlcffiRequest, HttpxRequest
+<span class="c-kw">from</span> crawling_framework.models <span class="c-kw">import</span> CreateTask
+
+<span class="c-kw">class</span> <span class="c-fn">WalmartCrawler</span>(Spider):
+
+    <span class="c-kw">async def</span> <span class="c-fn">start_placement_request</span>(self, request: Request):
+        <span class="c-comment"># Entry point for module="placement" tasks in local_config.yml</span>
+        <span class="c-kw">yield</span> CurlcffiRequest(
+            url=request.url,
+            impersonate=<span class="c-str">"chrome130"</span>,
+            callback=self.parse_listing,
+            validate_response=self.validate_request,
+            meta={<span class="c-str">"user_data"</span>: request.user_data}
+        )
+
+    <span class="c-kw">async def</span> <span class="c-fn">validate_request</span>(self, response: Response) -> bool:
+        <span class="c-kw">if</span> response.status != <span class="c-num">200</span>: <span class="c-kw">return False</span>
+        <span class="c-kw">if</span> <span class="c-str">"Access Denied"</span> <span class="c-kw">in</span> response.text: <span class="c-kw">return False</span>
+        <span class="c-kw">return True</span>   <span class="c-comment"># False triggers automatic retry</span>
+
+    <span class="c-kw">async def</span> <span class="c-fn">parse_listing</span>(self, response: Response):
+        <span class="c-comment"># Pagination: yield CreateTask to queue next pages</span>
+        next_url = self.get_next_page(response.text)
+        <span class="c-kw">if</span> next_url:
+            <span class="c-kw">yield</span> CreateTask(url=next_url)</pre><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <div class="label">Request types</div>
+      <div class="grid3">
+        <div class="info-card"><div class="ik">HttpxRequest <span class="badge b-green">Fastest</span></div><div class="iv">Simple HTML or REST APIs, no JS. Params: <code>method</code>, <code>params</code>, <code>data</code>, <code>json_data</code></div></div>
+        <div class="info-card"><div class="ik">CurlCffiRequest <span class="badge b-blue">Recommended</span></div><div class="iv">Impersonates Chrome/Firefox. Bypasses basic bot protection. Set <code>impersonate="chrome130"</code>.</div></div>
+        <div class="info-card"><div class="ik">PlaywrightRequest <span class="badge b-red">Deprecated</span></div><div class="iv">Full browser. Use camoufox or nodriver instead.</div></div>
+      </div>
+      <div class="label">Common request parameters</div>
+      <table class="doc-table">
+        <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
+        <tr><td><code>url</code></td><td>str</td><td>Target URL. Auto-validated by Pydantic.</td></tr>
+        <tr><td><code>headers</code></td><td>dict</td><td>HTTP headers.</td></tr>
+        <tr><td><code>cookies</code></td><td>dict</td><td>Cookies to send.</td></tr>
+        <tr><td><code>callback</code></td><td>method</td><td>Called with Response after download.</td></tr>
+        <tr><td><code>meta</code></td><td>dict</td><td>Pass data from request to callback.</td></tr>
+        <tr><td><code>proxy</code></td><td>str</td><td><code>http://user:pass@host:port</code></td></tr>
+        <tr><td><code>timeout</code></td><td>int</td><td>Timeout in seconds.</td></tr>
+        <tr><td><code>validate_response</code></td><td>method</td><td>Custom validation. False → retry.</td></tr>
+      </table>
+      <div class="label">Impersonation settings (settings.py)</div>
+      <div class="code-wrap"><pre>IMPERSONATION_SETTINGS = {
+    <span class="c-str">"ALLOW_DEFAULT_IMPERSONATE_HEADER"</span>: <span class="c-val">False</span>,
+    <span class="c-str">"DEFAULT_IMPERSONATE_BROWSER"</span>: <span class="c-str">"chrome130"</span>,
+}
+
+<span class="c-comment"># Or per-request:</span>
+<span class="c-kw">yield</span> CurlcffiRequest(
+    url=request.url,
+    impersonate=random.choice([<span class="c-str">"chrome130"</span>, <span class="c-str">"chrome110"</span>, <span class="c-str">"firefox110"</span>]),
+)</pre><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <div class="label">Exception hierarchy</div>
+      <div class="exc-tree"><span class="exc-base">DownloaderError</span> (Base)
+├── <span class="exc-child">RequestInitializationError</span>   <span class="c-comment"># URL invalid, Pydantic fail</span>
+├── <span class="exc-child">ResponseValidationError</span>      <span class="c-comment"># validate_response returned False</span>
+├── <span class="exc-child">CallbackExecutionError</span>       <span class="c-comment"># error inside callback</span>
+├── <span class="exc-child">ProxyManagerError</span>            <span class="c-comment"># proxy issues</span>
+├── <span class="exc-child">RetryExhaustError</span>            <span class="c-comment"># all retries exhausted</span>
+├── <span class="exc-child">RequestChainError</span>            <span class="c-comment"># chained request failure</span>
+└── <span class="exc-child">CookiesValidationError</span>       <span class="c-comment"># cookie generation/validation failed</span></div>
+    </div>
+
+    <!-- ══════════ PARSING ══════════ -->
+    <div class="section" id="sec-parsing">
+      <div class="section-header"><h2>Parsing In-Depth</h2><p>ParserAbstract class — processes .pf_chain files and extracts structured data into Parquet.</p></div>
+      <div class="label">Parser skeleton — main.py</div>
+      <div class="code-wrap"><pre><span class="c-kw">from</span> parsing_framework <span class="c-kw">import</span> ParserAbstract
+<span class="c-kw">from</span> parsing_framework.helpers.lxml_parser <span class="c-kw">import</span> LxmlParser
+<span class="c-kw">from</span> parsing_framework.models <span class="c-kw">import</span> ParsedResponse, PlacementProductDataItem
+
+<span class="c-kw">class</span> <span class="c-fn">WalmartParser</span>(ParserAbstract):
+
+    <span class="c-kw">async def</span> <span class="c-fn">start_parse_placement</span>(self, requests):
+        <span class="c-comment"># self.shop.code, self.shop.id — shop metadata available</span>
+        <span class="c-comment"># self.task.breadcrumb, self.task.url — task metadata available</span>
+        items = []
+        <span class="c-kw">for</span> request <span class="c-kw">in</span> requests:
+            tree = LxmlParser(request.response)
+            products = tree.xpath(<span class="c-str">'//div[contains(@class,"product-item")]'</span>)
+            <span class="c-kw">for</span> rank, product <span class="c-kw">in</span> enumerate(products, <span class="c-num">1</span>):
+                name = product.xpath(<span class="c-str">'.//span[@class="product-title"]/text()'</span>)
+                price = product.xpath(<span class="c-str">'.//span[@class="price"]/text()'</span>)
+                <span class="c-kw">if</span> name <span class="c-kw">and</span> price:
+                    items.append(PlacementProductDataItem.from_dict(
+                        request=request, task=self.task,
+                        data={<span class="c-str">"product_name"</span>: name[<span class="c-num">0</span>], <span class="c-str">"price"</span>: price[<span class="c-num">0</span>], <span class="c-str">"rank"</span>: rank}
+                    ))
+        <span class="c-kw">return</span> ParsedResponse(data_items=items, sub_tasks=[])</pre><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <div class="label">Parser libraries</div>
+      <div class="grid3">
+        <div class="info-card"><div class="ik">LxmlParser <span class="badge b-green">Fastest</span></div><div class="iv">XPath selectors. Best for well-formed HTML/XML.<br><code>tree.xpath('//a[@class="title"]/text()')</code></div></div>
+        <div class="info-card"><div class="ik">Bs4Parser</div><div class="iv">CSS selectors + BeautifulSoup4. Best for malformed HTML.<br><code>soup.css('li.product-item')</code></div></div>
+        <div class="info-card"><div class="ik">PraseraParser <span class="badge b-blue">AI-powered</span></div><div class="iv">Natural language — no selectors. Best for unstable pages or rapid prototyping.</div></div>
+      </div>
+      <div class="label">PraseraParser (AI) example</div>
+      <div class="code-wrap"><pre><span class="c-kw">from</span> parsing_framework.helpers.paresra_parser <span class="c-kw">import</span> PraseraParser
+
+attributes = {
+    <span class="c-str">"product_name"</span>: <span class="c-str">"What is the name of the product?"</span>,
+    <span class="c-str">"price"</span>: <span class="c-str">"What is the product's price?"</span>,
+    <span class="c-str">"image_url"</span>: <span class="c-str">"What is the URL of the main product image?"</span>
+}
+extracted = <span class="c-kw">await</span> PraseraParser.parser(
+    response=request.response, logger=self.logger, attributes=attributes
+)
+<span class="c-comment"># {'product_name': '...', 'price': '...', 'image_url': '...'}</span></pre><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <div class="label">DataItem type hierarchy</div>
+      <div class="exc-tree"><span class="exc-base">DataItem</span> (base — has data_type + strategy)
+├── <span class="exc-child">PlacementProductDataItem</span>   <span class="c-comment"># product ranking data</span>
+├── <span class="exc-child">PlacementCategoryDataItem</span>  <span class="c-comment"># category / breadcrumb</span>
+├── <span class="exc-child">PricingDataItem</span>            <span class="c-comment"># price, promo, availability</span>
+├── <span class="exc-child">RRQDataItem</span>                <span class="c-comment"># ratings, reviews, Q&amp;A</span>
+└── <span class="exc-child">CrTreeDataItem</span>             <span class="c-comment"># category tree / site structure</span></div>
+    </div>
+
+    <!-- ══════════ BOT PROTECTION ══════════ -->
+    <div class="section" id="sec-bot-protection">
+      <div class="section-header"><h2>Bot Protection</h2><p>Four layers available. Use the simplest that works for the target site.</p></div>
+      <div class="label">Decision order</div>
+      <div class="flow">
+        <div class="flow-box">Standard block?</div><div class="flow-arrow">→</div>
+        <div class="flow-box blue">CurlCffi impersonation</div><div class="flow-arrow">→</div>
+        <div class="flow-box amber">Needs real JS?</div><div class="flow-arrow">→</div>
+        <div class="flow-box amber">camoufox / nodriver</div><div class="flow-arrow">→</div>
+        <div class="flow-box">Has CAPTCHA?</div><div class="flow-arrow">→</div>
+        <div class="flow-box purple">captcha-solver</div>
+      </div>
+      <div class="label">1. CurlCffi impersonation</div>
+      <div class="code-wrap"><pre><span class="c-kw">yield</span> CurlcffiRequest(
+    url=request.url,
+    impersonate=random.choice([<span class="c-str">"chrome130"</span>, <span class="c-str">"chrome110"</span>, <span class="c-str">"firefox110"</span>]),
+    validate_response=self.validate_request,
+)</pre><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <div class="label">2. Browser-based (camoufox or nodriver)</div>
+      <div class="grid2">
+        <div class="info-card"><div class="ik">camoufox <span class="badge b-green">Recommended</span></div><div class="iv">Firefox-based. Install: <code>crawling_framework[camoufox]</code>. Shares BrowserSession interface with nodriver.</div></div>
+        <div class="info-card"><div class="ik">nodriver</div><div class="iv">Chrome via CDP. Install: <code>crawling_framework[nodriver]</code>. Avoids CDP-detectable automation.</div></div>
+      </div>
+      <div class="label">3. Captcha solver modules</div>
+      <div class="grid2">
+        <div class="info-card"><div class="ik">captcha_solver.external</div><div class="iv">Classic captchas (text, hCaptcha, GeeTest). Sends to Decaptcha via RabbitMQ. Install: <code>crawling_framework[external]</code></div></div>
+        <div class="info-card"><div class="ik">captcha_solver.browser</div><div class="iv">Interactive: Cloudflare, DataDome, PerimeterX. Drives real browser via opencv + pyautogui. Install: <code>crawling_framework[camoufox]</code></div></div>
+      </div>
+      <div class="label">Supported captcha types</div>
+      <table class="doc-table">
+        <tr><th>Type</th><th>Class</th><th>Notes</th></tr>
+        <tr><td>Amazon image captcha</td><td><code>AmzSimpleDecaptcher</code></td><td>Distorted text in image. Test endpoint: httpbin.nonprod.profitero.dev/captcha/amz-simple</td></tr>
+        <tr><td>hCaptcha</td><td><code>HcaptchaDecaptcher</code></td><td>Sends URL + sitekey → returns token</td></tr>
+        <tr><td>GeeTest v3</td><td><code>GeetestDecaptcher</code></td><td>Sends URL + gt + challenge → returns solved response</td></tr>
+      </table>
+      <div class="callout callout-warn"><span class="callout-icon">⚠</span><span>Captcha flow: GET page → 302 redirect → parse token → RabbitMQ → get answer → POST → clearance cookie. Set <code>timeout ≥ 120000ms</code> in <code>cookies_options</code>.</span></div>
+    </div>
+
+    <!-- ══════════ COOKIES ══════════ -->
+    <div class="section" id="sec-cookies">
+      <div class="section-header"><h2>Session &amp; Cookie Management</h2><p>Automated cookie lifecycle via <code>cookies_options</code> in request meta.</p></div>
+      <div class="label">Full cookies_options config</div>
+      <div class="code-wrap"><pre><span class="c-kw">yield</span> CurlcffiRequest(
+    url=target_url,
+    meta={
+        <span class="c-str">"user_data"</span>: request.user_data,
+        <span class="c-str">"cookies_options"</span>: {
+            <span class="c-str">"enabled"</span>: <span class="c-val">True</span>,
+            <span class="c-str">"bind_proxy"</span>: <span class="c-val">True</span>,         <span class="c-comment"># same proxy reused with same cookies</span>
+            <span class="c-str">"cookies_identifier"</span>: zipcode,  <span class="c-comment"># cache key — same id = shared cookies</span>
+            <span class="c-str">"valid_count"</span>: <span class="c-num">5</span>,             <span class="c-comment"># max reuses before forced regeneration</span>
+            <span class="c-str">"timeout"</span>: <span class="c-num">5000</span>,              <span class="c-comment"># seconds until cookies expire</span>
+            <span class="c-str">"cookies_callback"</span>: self.search_for_store,
+            <span class="c-str">"validate_cookies"</span>: self.validate_cookies,
+        },
+    },
+)</pre><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <div class="label">3-step cookie generation (store/zipcode)</div>
+      <div class="code-wrap"><pre><span class="c-kw">async def</span> <span class="c-fn">search_for_store</span>(self, request):
+    <span class="c-kw">yield</span> CurlcffiRequest(url=search_url, callback=self.select_store)
+
+<span class="c-kw">async def</span> <span class="c-fn">select_store</span>(self, response):
+    stores = json.loads(response.text)
+    store = self.find_store(stores)
+    self.store_id = store.get(<span class="c-str">"id"</span>, <span class="c-str">""</span>)
+    <span class="c-kw">yield</span> CurlcffiRequest(url=confirm_store_url, callback=self.store_confirm)
+
+<span class="c-kw">async def</span> <span class="c-fn">store_confirm</span>(self, response):
+    resp_json = json.loads(response.text)
+    <span class="c-kw">if</span> response.status_code == <span class="c-num">200</span> <span class="c-kw">and</span> resp_json.get(<span class="c-str">"success"</span>):
+        <span class="c-kw">yield</span> CookiesModel(cookies=response.cookies)
+    <span class="c-kw">else</span>:
+        <span class="c-kw">yield</span> CookiesModel(cookies={<span class="c-str">"Invalid"</span>: <span class="c-str">"True"</span>})
+
+<span class="c-kw">async def</span> <span class="c-fn">validate_cookies</span>(self, cookies: dict) -> bool:
+    <span class="c-kw">return</span> cookies.get(<span class="c-str">"Invalid"</span>) != <span class="c-str">"True"</span></pre><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <div class="grid2">
+        <div class="info-card"><div class="ik">bind_proxy: True</div><div class="iv">Same proxy-cookies pair for all requests with same <code>cookies_identifier</code>. Consistent session.</div></div>
+        <div class="info-card"><div class="ik">bind_proxy: False</div><div class="iv">Proxy rotates per request even with same cookies. More IP diversity.</div></div>
+      </div>
+    </div>
+
+    <!-- ══════════ DATA TYPES ══════════ -->
+    <div class="section" id="sec-data-types">
+      <div class="section-header"><h2>Data Types</h2><p>Pydantic models for input, internal state, and output across both frameworks.</p></div>
+      <div class="label">Task model</div>
+      <div class="code-wrap"><pre><span class="c-kw">class</span> <span class="c-fn">Task</span>(BaseModel):
+    url: AnyHttpUrl
+    user_data: Optional[str]
+    module: Module           <span class="c-comment"># placement / pricing / rrq / cr_tree</span>
+    strategy: Strategy       <span class="c-comment"># "scheduled-ds" only for Optimus</span>
+    shop_id: str
+    breadcrumb: Optional[str]
+    status: Status</pre><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <div class="label">Shop model</div>
+      <div class="code-wrap"><pre><span class="c-kw">class</span> <span class="c-fn">Shop</span>(BaseModel):
+    id: str;  name: str;  code: str;  user_code: str
+    code_namespace: str | None
+    proxy_set_name: str | None
+    proxy_set: ProxySet | None = None</pre><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <div class="label">.pf_chain file fields</div>
+      <table class="doc-table">
+        <tr><th>Field</th><th>Description</th></tr>
+        <tr><td><code>task_id</code></td><td>Unique ID for this crawl task</td></tr>
+        <tr><td><code>shop_id</code></td><td>Shop identifier</td></tr>
+        <tr><td><code>module</code></td><td>Module type: pricing / rrq / placement / cr_tree</td></tr>
+        <tr><td><code>request</code></td><td>Original Request object</td></tr>
+        <tr><td><code>response</code></td><td>Full server Response (status, text, headers, cookies)</td></tr>
+        <tr><td><code>metadata</code></td><td>Extra context: ranking_limit, breadcrumb, etc.</td></tr>
+        <tr><td><code>status</code></td><td>success or failure</td></tr>
+        <tr><td><code>timestamp</code></td><td>Crawl completion time</td></tr>
+      </table>
+      <div class="callout callout-info"><span class="callout-icon">ℹ</span><span>Filename format: <code>1761595906_placement.pf_chain</code> — timestamp + module name.</span></div>
+      <div class="label">Parser instance variables (always available)</div>
+      <div class="grid2">
+        <div class="info-card"><div class="ik">self.shop</div><div class="iv">Contains <code>id</code>, <code>name</code>, <code>code</code> of shop being parsed.</div></div>
+        <div class="info-card"><div class="ik">self.task</div><div class="iv">Contains <code>url</code>, <code>breadcrumb</code>, <code>strategy</code> of current task.</div></div>
+      </div>
+    </div>
+
+    <!-- ══════════ TOOLKIT ══════════ -->
+    <div class="section" id="sec-toolkit">
+      <div class="section-header"><h2>Optimus Toolkit</h2><p>Supporting tools for local testing, comparison, and task scheduling.</p></div>
+      <div class="grid3">
+        <div class="card"><h3>Comparer</h3><p>Compare local Parquet files against production data. Works for DS360 Pricing, Placement (CR+SR), and RRQ modules.</p><div class="info-card"><div class="ik">Repo</div><div class="iv"><code>gitlab.../data-acquisition/optimus_migration_tool</code></div></div></div>
+        <div class="card"><h3>Optimus Tracer</h3><p>Automates local crawl+parse for big scopes. Gives both packed (.pf_chain, .parquet) and unpacked (.html, .csv) output.</p><div class="info-card"><div class="ik">Repo</div><div class="iv"><code>gitlab.../data-acquisition/optimus-tracer</code></div></div></div>
+        <div class="card"><h3>TSender</h3><p>Schedule tasks into 1.5 production system. Use for crawling big scopes on feature environment.</p><div class="info-card"><div class="ik">Repo</div><div class="iv"><code>gitlab.../data-acquisition/tsender</code></div></div></div>
+      </div>
+      <div class="label">Updating dependencies</div>
+      <div class="code-wrap"><pre>export PIP_EXTRA_INDEX_URL="https://oauth2accesstoken@us-central1-python.pkg.dev/pf-artifacts/data-acquisition-pypi/simple/"
+python -m piptools compile requirements.in -o requirements.txt
+
+<span class="c-comment"># Pin a specific framework version:</span>
+pip-compile requirements.in -o requirements.txt --upgrade-package parsing-framework==0.0.9
+
+<span class="c-comment"># ⚠️ Always comment out --extra-index-url in requirements.txt before git commit!</span></pre><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+    </div>
+
+    <!-- ══════════ PIPELINE ══════════ -->
+    <div class="section" id="sec-pipeline">
+      <div class="section-header"><h2>CI/CD Pipeline &amp; Deployment</h2><p>GitLab pipeline auto-runs on every push. 5 stages → 3 deployment environments.</p></div>
+      <div class="label">Pipeline stages</div>
+      <div class="pipeline">
+        <div class="pipe-step"><div class="pn">Stage 1</div><div class="pt">Render version</div></div>
+        <div class="pipe-step"><div class="pn">Stage 2</div><div class="pt">Build Docker</div></div>
+        <div class="pipe-step"><div class="pn">Stage 3</div><div class="pt">Lint</div></div>
+        <div class="pipe-step"><div class="pn">Stage 4</div><div class="pt">Pytest</div></div>
+        <div class="pipe-step"><div class="pn">Stage 5</div><div class="pt">SonarQube</div></div>
+      </div>
+      <div class="grid2" style="margin-top:12px">
+        <div class="info-card"><div class="ik">Stage 3 — Lint</div><div class="iv">Docker validation, Black, Ruff, Mypy, validate requirements.txt, SonarQube registration</div></div>
+        <div class="info-card"><div class="ik">Stage 4 — Pytest</div><div class="iv">All unit + integration tests. Coverage reports generated.</div></div>
+        <div class="info-card"><div class="ik">Stage 5 — SonarQube</div><div class="iv">Code quality, security vulnerabilities, code smells, maintainability score</div></div>
+        <div class="info-card"><div class="ik">Pre-commit (local)</div><div class="iv">Same checks as Lint stage. Passing locally = pipeline Lint passes.</div></div>
+      </div>
+      <div class="label">Deployment environments</div>
+      <div class="env-row">
+        <div class="env-box env-feat"><div class="et">① Feature environment</div><div class="ed">Auto-deployed after all CI stages pass. First testing checkpoint.</div></div>
+        <div class="env-box env-pre"><div class="et">② Pre-production</div><div class="ed">Tagged Git release deployed here. Final validation under near-production conditions.</div></div>
+        <div class="env-box env-prod"><div class="et">③ Production</div><div class="ed">Deploy via <code>deploy-da-1-5</code> GitLab CI. Auto-deploys after release tag.</div></div>
+      </div>
+      <div class="label">Pre-push checklist</div>
+      <ul class="checklist">
+        <li>config.env — all local ENVs commented out</li>
+        <li>requirements.txt — extra-index-url line commented out</li>
+        <li>All imports are relative (<code>from .module import X</code>)</li>
+        <li>Dockerfile — browser lines uncommented if using camoufox/playwright</li>
+        <li>Dockerfile — <code>git</code> added to apt-get install list</li>
+        <li>tests/ — unit tests written and passing locally</li>
+      </ul>
+    </div>
+
+    <!-- ══════════ CR TREE ══════════ -->
+    <div class="section" id="sec-cr-tree">
+      <div class="section-header"><h2>CR Tree Scheduling</h2><p>CRON-based category tree collection configured via DB and DAG system.</p></div>
+      <div class="label">Set schedule in shops table</div>
+      <div class="code-wrap"><pre><span class="c-comment">-- Set CRON (e.g. every Monday at midnight)</span>
+UPDATE shops
+SET cr_tree_recrawl_schedule = <span class="c-str">"0 0 * * 1"</span>
+WHERE shop_id = &lt;shop_id&gt;;
+
+<span class="c-comment">-- Verify shop is ready:</span>
+SELECT id, cr_tree_recrawl_schedule, cr_tree_recrawl_next_time
+FROM shops
+WHERE production = <span class="c-str">'Y'</span> AND active = <span class="c-str">'Y'</span>
+  AND cr_tree_recrawl_schedule IS NOT NULL
+  AND id = &lt;shop_id&gt;
+  AND code_namespace LIKE <span class="c-str">'Python::%'</span>;</pre><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <div class="label">DAG pipeline</div>
+      <table class="doc-table">
+        <tr><th>DAG</th><th>Trigger</th><th>Purpose</th></tr>
+        <tr><td><code>cr_tree_collection_scheduler</code></td><td>Hourly</td><td>Selects ready shops → triggers cr_tree_collector</td></tr>
+        <tr><td><code>cr_tree_collector</code></td><td>Manual or auto</td><td>Creates task with seed URL. Params: module, shop, day_in_shop_tz, ttl</td></tr>
+        <tr><td><code>cr_tree_landing_listener</code></td><td>Hourly</td><td>Checks GCS for new Parquet → triggers cr_tree_loader</td></tr>
+        <tr><td><code>cr_tree_loader</code></td><td>Triggered by listener</td><td>Converts + loads Parquet into <code>site_tree</code> DB table</td></tr>
+      </table>
+    </div>
+
+    <!-- ══════════ ERRORS ══════════ -->
+    <div class="section" id="sec-errors">
+      <div class="section-header"><h2>Errors &amp; Fixes</h2><p>All documented errors with root causes and exact fixes.</p></div>
+      <table class="doc-table">
+        <tr><th>Error</th><th>Cause</th><th>Fix</th></tr>
+        <tr><td><span class="err">Could not import module crawler.main</span></td><td>Absolute import: <code>from browser_utils import X</code></td><td class="fix">Use relative: <code>from .browser_utils import X</code> + run <code>pip install -e .</code></td></tr>
+        <tr><td><span class="err">TimeoutError: Navigation timeout 30000ms exceeded</span></td><td>Page didn't load in time</td><td class="fix">Increase <code>browser_timeout=60000</code>. Use <code>wait_until="networkidle"</code>. Check for CAPTCHAs.</td></tr>
+        <tr><td><span class="err">pydantic ValidationError: url invalid</span></td><td>URL missing schema or both <code>data</code> + <code>json_data</code> set</td><td class="fix">Verify URL format. Set only one of <code>data</code> or <code>json_data</code>.</td></tr>
+        <tr><td><span class="err">Callback function execution error</span></td><td>Unexpected parsing error, missing HTML elements</td><td class="fix">Add error handling in callback. Test against real response HTML.</td></tr>
+        <tr><td><span class="err">Pipeline fails: git not found in Docker</span></td><td>Dockerfile missing git</td><td class="fix">Add <code>git</code> to Dockerfile's apt-get install list. See talabat_crawler as reference.</td></tr>
+        <tr><td><span class="err">Brightdata proxy not working locally</span></td><td>Brightdata needs VPN + internal gateway</td><td class="fix">Use Oxylabs for local testing. Enable VPN for Brightdata (port 65432).</td></tr>
+        <tr><td><span class="err">Instances running in local mode in prod</span></td><td>config.env ENVs not commented before push</td><td class="fix">Comment all local-only ENVs in config.env before committing.</td></tr>
+        <tr><td><span class="err">requirements.txt version conflicts</span></td><td>Strict da-platform-client pinning</td><td class="fix">Use <code>--upgrade-package parsing-framework==0.0.9</code> to pin specific version.</td></tr>
+      </table>
+    </div>
+
+    <!-- ══════════ REAL EXAMPLE ══════════ -->
+    <div class="section" id="sec-example">
+      <div class="section-header"><h2>Real Example — CarPhoneWarehouse</h2><p>End-to-end walkthrough from YAML config to Parquet output. Matches exact document patterns.</p></div>
+      <div class="label">Step 1 — Crawler local_config.yml</div>
+      <div class="code-wrap"><pre><span class="c-key">rate_limits:</span>
+- <span class="c-key">shop_id:</span> <span class="c-str">"155887"</span>
+  <span class="c-key">module:</span> <span class="c-str">"placement"</span>
+  <span class="c-key">rate_limit:</span> <span class="c-num">5</span>
+<span class="c-key">shop_settings:</span>
+  <span class="c-str">"155887"</span>:
+    <span class="c-key">name:</span> <span class="c-str">"dags_test"</span>
+    <span class="c-key">code:</span> <span class="c-str">"c_crawler"</span>
+    <span class="c-key">proxy_set:</span> <span class="c-str">"test_proxy"</span>
+<span class="c-key">proxy_sets:</span>
+- <span class="c-key">name:</span> <span class="c-str">"test_proxy"</span>
+  <span class="c-key">type:</span> <span class="c-str">"get"</span>
+  <span class="c-key">private:</span> <span class="c-val">false</span>
+  <span class="c-key">proxies:</span>
+  - <span class="c-str">"login:password@oxylabs-ip:60000"</span>
+<span class="c-key">tasks:</span>
+- <span class="c-key">shop_id:</span> <span class="c-str">"155887"</span>
+  <span class="c-key">url:</span> <span class="c-str">"https://www.carphonewarehouse.com/mobiles/sim-free"</span>
+  <span class="c-key">user_data:</span> <span class="c-str">'{"ranking_limit":170}'</span>
+  <span class="c-key">module:</span> <span class="c-str">"placement"</span>
+  <span class="c-key">strategy:</span> <span class="c-str">"scheduled-ds"</span>
+  <span class="c-key">breadcrumb:</span> <span class="c-str">"Mobile Phones *** SIM Free"</span></pre><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <div class="label">Step 2 — Spider code</div>
+      <div class="code-wrap"><pre><span class="c-kw">class</span> <span class="c-fn">CarphonewarehouseCrawler</span>(Spider):
+    <span class="c-kw">async def</span> <span class="c-fn">start_placement_request</span>(self, request: Request):
+        <span class="c-kw">yield</span> CurlcffiRequest(url=request.url, impersonate=<span class="c-str">"chrome130"</span>,
+            callback=self.parse_listing, validate_response=self.validate_request,
+            meta={<span class="c-str">"user_data"</span>: request.user_data})
+
+    <span class="c-kw">async def</span> <span class="c-fn">validate_request</span>(self, response):
+        <span class="c-kw">return</span> response.status == <span class="c-num">200</span> <span class="c-kw">and</span> <span class="c-str">"Access Denied"</span> <span class="c-kw">not in</span> response.text
+
+    <span class="c-kw">async def</span> <span class="c-fn">parse_listing</span>(self, response):
+        next_url = self.get_next_page(response.text)
+        <span class="c-kw">if</span> next_url: <span class="c-kw">yield</span> CreateTask(url=next_url)</pre><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <div class="label">Step 3 — .pf_chain output</div>
+      <div class="code-wrap"><pre><span class="c-comment">File: ./output/1761595906_placement.pf_chain</span>
+{ "task_id":"abc123", "shop_id":"155887", "module":"placement",
+  "response":{"status":200,"text":"&lt;html&gt;...&lt;/html&gt;"},
+  "metadata":{"ranking_limit":170,"breadcrumb":"Mobile Phones *** SIM Free"},
+  "status":"success", "timestamp":"2024-01-01T12:00:00Z" }</pre></div>
+      <div class="label">Step 4 — Parser code</div>
+      <div class="code-wrap"><pre><span class="c-kw">class</span> <span class="c-fn">CarphonewarehouseParser</span>(ParserAbstract):
+    <span class="c-kw">async def</span> <span class="c-fn">start_parse_placement</span>(self, requests):
+        items = []
+        <span class="c-kw">for</span> request <span class="c-kw">in</span> requests:
+            tree = LxmlParser(request.response)
+            <span class="c-kw">for</span> rank, p <span class="c-kw">in</span> enumerate(tree.xpath(<span class="c-str">'//li[contains(@class,"product")]'</span>), <span class="c-num">1</span>):
+                items.append(PlacementProductDataItem.from_dict(
+                    request=request, task=self.task,
+                    data={<span class="c-str">"product_name"</span>: p.xpath(<span class="c-str">'.//h2/text()'</span>)[<span class="c-num">0</span>],
+                          <span class="c-str">"price"</span>: p.xpath(<span class="c-str">'.//span[@class="price"]/text()'</span>)[<span class="c-num">0</span>],
+                          <span class="c-str">"rank"</span>: rank, <span class="c-str">"breadcrumb"</span>: self.task.breadcrumb}
+                ))
+        <span class="c-kw">return</span> ParsedResponse(data_items=items, sub_tasks=[])</pre><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <div class="label">Step 5 — Final Parquet output</div>
+      <div class="code-wrap"><pre><span class="c-comment">File: ./crawl_data/data_items/155887_placement.parquet</span>
+
+shop_id | product_name        | price | rank | breadcrumb
+--------|---------------------|-------|------|-------------------------------
+155887  | Samsung Galaxy S24  | £799  |  1   | Mobile Phones *** SIM Free
+155887  | iPhone 15           | £999  |  2   | Mobile Phones *** SIM Free
+155887  | Google Pixel 8      | £599  |  3   | Mobile Phones *** SIM Free
+...up to ranking_limit=170 rows</pre></div>
+      <div class="label">Complete flow summary</div>
+      <div class="flow">
+        <div class="flow-box amber">YAML config</div><div class="flow-arrow">→</div>
+        <div class="flow-box green">CurlCffi request</div><div class="flow-arrow">→</div>
+        <div class="flow-box green">Response validated</div><div class="flow-arrow">→</div>
+        <div class="flow-box green">.pf_chain saved</div><div class="flow-arrow">→</div>
+        <div class="flow-box blue">LxmlParser</div><div class="flow-arrow">→</div>
+        <div class="flow-box blue">ParsedResponse</div><div class="flow-arrow">→</div>
+        <div class="flow-box">Parquet → GCS</div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+/* ─── Section routing ─── */
+const SECTION_TITLES = {
+  'overview':'Overview','setup-guide':'Setup Guide (12 Steps)',
+  'crawling':'Crawling In-Depth','parsing':'Parsing In-Depth',
+  'bot-protection':'Bot Protection','cookies':'Session & Cookies',
+  'data-types':'Data Types','toolkit':'Optimus Toolkit',
+  'pipeline':'CI/CD & Deploy','cr-tree':'CR Tree Scheduling',
+  'errors':'Errors & Fixes','example':'Real Example'
+};
+
+function show(id) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const sec = document.getElementById('sec-'+id);
+  if(sec) sec.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    if(n.getAttribute('onclick')&&n.getAttribute('onclick').includes("'"+id+"'"))
+      n.classList.add('active');
+  });
+  document.getElementById('topbar-title').textContent = SECTION_TITLES[id]||id;
+  window.scrollTo(0,0);
+  closeSidebar();
+}
+function openSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('overlay').classList.add('open')}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('open')}
+function filterNav(val){
+  const q=val.toLowerCase();
+  document.querySelectorAll('.nav-item').forEach(item=>{
+    const label=(item.getAttribute('data-label')||item.textContent).toLowerCase();
+    item.style.display=label.includes(q)?'flex':'none';
+  });
+}
+function copyCode(btn){
+  const wrap=btn.closest('.code-wrap,.section-inner');
+  const pre=btn.parentElement.querySelector?btn.parentElement:btn.closest('.code,.code-wrap');
+  const el=btn.closest('.code-wrap')?btn.closest('.code-wrap').querySelector('pre'):btn.parentElement;
+  const text=(el.innerText||el.textContent).replace(/^copy$/m,'').trim();
+  navigator.clipboard.writeText(text).then(()=>{
+    btn.textContent='copied!';btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='copy';btn.classList.remove('copied')},2000);
+  });
+}
+
+/* ─── Setup Guide Stepper ─── */
+const SG_STEPS = [
+  {
+    title:"Prerequisites — install once",
+    sub:"Things you need before anything else",
+    num:1,
+    html:`<div class="section"><div class="label">Required tools</div>
+<div class="grid2">
+  <div class="card"><div class="ck">Python</div><div class="cv">Version 3.11 or above. Check: <code>python --version</code></div></div>
+  <div class="card"><div class="ck">Google Cloud SDK</div><div class="cv">Install gcloud CLI. Needed for private PyPI access.</div></div>
+  <div class="card"><div class="ck">Git</div><div class="cv">For cloning repos and branch management.</div></div>
+  <div class="card"><div class="ck">pre-commit</div><div class="cv"><code>brew install pre-commit</code> — enforces code quality.</div></div>
+</div>
+<div class="label">Authenticate with Google Cloud</div>
+<div class="code"><button class="copy-btn" onclick="sgCopy(this)">copy</button>gcloud auth application-default login
+
+gcloud config set project pf-artifacts
+
+pip install -v keyring keyrings.google-artifactregistry-auth</div>
+<div class="tip">✓ This opens a browser login. Do it once — credentials are cached.</div>
+<div class="label">Proxy VPN note</div>
+<div class="grid2">
+  <div class="card"><div class="ck">Oxylabs <span class="badge b-ok">No VPN needed</span></div><div class="cv">Works locally without VPN. Port 60000. Credentials from Vault.</div></div>
+  <div class="card"><div class="ck">Brightdata <span class="badge b-warn">VPN required</span></div><div class="cv">Works through internal gateway only. Enable VPN first. Port 65432.</div></div>
+</div></div>`
+  },
+  {
+    title:"Create GitLab repository",
+    sub:"Name it correctly — this affects Docker image naming",
+    num:2,
+    html:`<div class="section"><div class="label">Where to create</div>
+<div class="grid2">
+  <div class="card"><div class="ck">Crawler repo</div><div class="cv">Create under: <code>gitlab.../data-acquisition/crawlers/</code></div></div>
+  <div class="card"><div class="ck">Parser repo</div><div class="cv">Create under: <code>gitlab.../data-acquisition/parsers/</code></div></div>
+</div>
+<div class="label">Naming rules — follow exactly</div>
+<div class="code">Format: &lt;shop_name&gt;_crawler  or  &lt;shop_name&gt;_parser
+
+Rules for shop_name:
+  - Remove everything before domain (subdomains)
+  - Remove domain zone and everything after it
+
+Examples:
+  xxx.yyy.walmart.co.uk  →  walmart_crawler
+  walmart.com            →  walmart_crawler
+  fresh.walmart.de       →  walmart_crawler
+
+Conflicts (same domain, different shops):
+  amazon.com    →  amazon_com_crawler
+  amazon.com.mx →  amazon_com_mx_crawler</div>
+<div class="warn">⚠ Project name AND project slug in GitLab must be identical and in snake_case. Mismatches cause Docker image name conflicts.</div>
+<div class="tip">✓ All crawlers and parsers must be unique subprojects. Duplicate names cause Docker image conflicts at build time.</div>
+</div>`
+  },
+  {
+    title:"Clone repo and create feature branch",
+    sub:"Branch naming is required — no direct commits to main",
+    num:3,
+    html:`<div class="section"><div class="label">Clone via SSH</div>
+<div class="code"><button class="copy-btn" onclick="sgCopy(this)">copy</button>git clone git@gitlab.profitero.com:data-acquisition/crawlers/walmart_crawler.git
+
+cd walmart_crawler</div>
+<div class="label">Create feature branch (required format)</div>
+<div class="code"><button class="copy-btn" onclick="sgCopy(this)">copy</button>git checkout -b feature/DQ-194478
+
+git push -u origin feature/DQ-194478</div>
+<div class="info">ℹ Branch name must be <code>feature/&lt;ticket_key&gt;</code> — e.g. <code>feature/DQ-194478</code>. Use your actual Jira ticket key.</div>
+<div class="label">For existing repos (update instead of fresh install)</div>
+<div class="code"><button class="copy-btn" onclick="sgCopy(this)">copy</button>git clone git@gitlab.profitero.com:data-acquisition/crawlers/walmart_crawler.git
+cd walmart_crawler
+git checkout -b feature/DQ-194478
+git push -u origin feature/DQ-194478</div>
+<div class="tip">✓ For existing repos, use <code>pip install -r requirements.txt</code> instead of fresh install in the next step.</div>
+</div>`
+  },
+  {
+    title:"Create virtual environment and install framework",
+    sub:"Install only ONE framework — crawling OR parsing, never both",
+    num:4,
+    html:`<div class="section"><div class="label">Create and activate virtual environment</div>
+<div class="code"><button class="copy-btn" onclick="sgCopy(this)">copy</button>python -m venv .venv
+
+source .venv/bin/activate</div>
+<div class="label">Install the framework — pick ONE only</div>
+<div class="grid2">
+  <div class="card"><div class="ck">For a crawler project</div><div class="cv"><code>pip install crawling-framework --extra-index-url "https://oauth2accesstoken@us-central1-python.pkg.dev/pf-artifacts/data-acquisition-pypi/simple/"</code></div></div>
+  <div class="card"><div class="ck">For a parser project</div><div class="cv"><code>pip install parsing-framework --extra-index-url "https://oauth2accesstoken@us-central1-python.pkg.dev/pf-artifacts/data-acquisition-pypi/simple/"</code></div></div>
+</div>
+<div class="warn">⚠ Never install both crawling-framework and parsing-framework in the same project. Each project is either a crawler or a parser — never both.</div>
+<div class="label">Optional bot-protection extras (crawlers only)</div>
+<div class="code"><button class="copy-btn" onclick="sgCopy(this)">copy</button>pip install "crawling-framework[camoufox]"   # Firefox browser + captcha browser solver
+pip install "crawling-framework[nodriver]"   # Chrome via CDP + captcha browser solver
+pip install "crawling-framework[external]"   # Decaptcha (RabbitMQ) service only</div>
+<div class="info">ℹ Only add these if the target site requires them. They significantly increase Docker image size.</div>
+</div>`
+  },
+  {
+    title:"Generate project skeleton",
+    sub:"Framework creates all required files automatically",
+    num:5,
+    html:`<div class="section"><div class="label">Run the create command</div>
+<div class="code"><button class="copy-btn" onclick="sgCopy(this)">copy</button>crawling_framework create walmart_crawler
+# or for parser:
+parsing_framework create walmart_parser</div>
+<div class="warn">⚠ Project name must match the repo name from Step 2 exactly — same snake_case name.</div>
+<div class="label">Files generated</div>
+<div class="file-tree"><span class="ft-dir">walmart_crawler/</span>
+├── <span class="ft-dir">walmart_crawler/</span>
+│   ├── <span class="ft-file">__init__.py</span>
+│   ├── <span class="ft-file">main.py</span>        <span class="ft-comment"># Your Spider class — crawl logic goes here</span>
+│   └── <span class="ft-file">settings.py</span>    <span class="ft-comment"># IMPERSONATION_SETTINGS, etc.</span>
+├── <span class="ft-file">config.env</span>         <span class="ft-comment"># ⚠️ Comment most lines before git push!</span>
+├── <span class="ft-file">local_config.yml</span>   <span class="ft-comment"># Rate limits, proxies, tasks — local only</span>
+├── <span class="ft-file">requirements.in</span>    <span class="ft-comment"># Edit this to add dependencies</span>
+├── <span class="ft-file">requirements.txt</span>   <span class="ft-comment"># Generated — never edit manually</span>
+├── <span class="ft-file">Dockerfile</span>         <span class="ft-comment"># Uncomment browser lines if using playwright/camoufox</span>
+└── <span class="ft-dir">tests/</span>
+    └── <span class="ft-file">...</span></div>
+<div class="tip">✓ If your crawler uses a browser in production, uncomment the relevant lines in the Dockerfile before deploying.</div>
+</div>`
+  },
+  {
+    title:"Generate requirements and install dependencies",
+    sub:"Use pip-tools — never edit requirements.txt manually",
+    num:6,
+    html:`<div class="section"><div class="label">Generate requirements.txt from requirements.in</div>
+<div class="code"><button class="copy-btn" onclick="sgCopy(this)">copy</button>export PIP_EXTRA_INDEX_URL="https://oauth2accesstoken@us-central1-python.pkg.dev/pf-artifacts/data-acquisition-pypi/simple/"
+
+python -m piptools compile requirements.in -o requirements.txt</div>
+<div class="warn">⚠ After generating, open requirements.txt and comment out the --extra-index-url line before committing. Otherwise instances run in local mode in production.</div>
+<div class="code"><button class="copy-btn" onclick="sgCopy(this)">copy</button># Comment this line in requirements.txt before git push:
+# --extra-index-url https://oauth2accesstoken@us-central1-python.pkg.dev/...</div>
+<div class="label">Install all dependencies</div>
+<div class="code"><button class="copy-btn" onclick="sgCopy(this)">copy</button>pip install -r requirements.txt
+
+pip install -e .</div>
+<div class="info">ℹ <code>pip install -e .</code> installs the project in editable mode — required for relative imports to work correctly.</div>
+<div class="label">To add a new package later</div>
+<div class="code"><button class="copy-btn" onclick="sgCopy(this)">copy</button># 1. Add the package name to requirements.in
+# 2. Re-run:
+python -m piptools compile requirements.in -o requirements.txt
+
+# To pin a specific framework version:
+pip-compile requirements.in -o requirements.txt --upgrade-package parsing-framework==0.0.9</div>
+</div>`
+  },
+  {
+    title:"Set up pre-commit hooks",
+    sub:"Mandatory — enforces code quality before every commit",
+    num:7,
+    html:`<div class="section"><div class="label">Install and activate</div>
+<div class="code"><button class="copy-btn" onclick="sgCopy(this)">copy</button>brew install pre-commit
+
+pre-commit install</div>
+<div class="label">What pre-commit runs on every commit</div>
+<div class="grid2">
+  <div class="card"><div class="ck">Black</div><div class="cv">Auto-formats code to PEP 8 style. No manual formatting needed.</div></div>
+  <div class="card"><div class="ck">Ruff</div><div class="cv">Fast linter — catches unused imports, style issues, syntax errors.</div></div>
+  <div class="card"><div class="ck">Mypy</div><div class="cv">Static type checker — validates all type hints.</div></div>
+  <div class="card"><div class="ck">Pytest</div><div class="cv">Runs all unit and integration tests in the <code>tests/</code> folder.</div></div>
+</div>
+<div class="tip">✓ Pre-commit runs automatically on <code>git commit</code>. If any check fails, the commit is blocked. Fix them and re-commit.</div>
+<div class="warn">⚠ These same checks also run in the GitLab CI Lint stage. Passing pre-commit locally = pipeline Lint passes.</div>
+</div>`
+  },
+  {
+    title:"Configure config.env",
+    sub:"Controls execution mode — local vs production",
+    num:8,
+    html:`<div class="section">
+<div class="warn">⚠ Almost all ENVs must be commented out before pushing to GitLab. Otherwise instances run in local mode in production. Keep only ENVs needed in production uncommented.</div>
+<div class="label">For crawlers — config.env (local testing)</div>
+<div class="code"><button class="copy-btn" onclick="sgCopy(this)">copy</button>MODE=local
+
+UNIT_LOG_LEVEL=INFO
+
+# Saves .pf_chain files locally (comment out for GCS in prod)
+DA_PLC_UPLOADER_CRAWLSET_OUTPUT_PATH=file://./output/
+
+# How often data is flushed to file (seconds)
+DA_PLC_UPLOADER_CRAWLSET_FLUSH_INTERVAL=5</div>
+<div class="label">For parsers — config.env (local testing)</div>
+<div class="code"><button class="copy-btn" onclick="sgCopy(this)">copy</button>MODE=local
+
+UNIT_LOG_LEVEL=INFO
+
+# Saves Parquet files locally (comment out for GCS in prod)
+DA_PLC_UPLOADER_DATA_ITEM_BASE_PATH=./crawl_data/data_items</div>
+<div class="tip">✓ When the output path ENV is commented out, output goes to GCS automatically. Uncommented = local file. Commented = cloud.</div>
+</div>`
+  },
+  {
+    title:"Configure local_config.yml",
+    sub:"Defines what to crawl or parse in local mode",
+    num:9,
+    html:`<div class="section"><div class="label">For crawlers — local_config.yml</div>
+<div class="code"><button class="copy-btn" onclick="sgCopy(this)">copy</button>rate_limits:
+- shop_id: "20607"
+  module: "placement"
+  rate_limit: 100          # max requests per minute
+- shop_id: "20607"
+  module: "pricing"
+  rate_limit: 100
+
+shop_settings:
+  "20607":
+    name: "walmart"
+    code: "walmart_crawler"
+    user_code: ""
+    proxy_set: "oxylabs_set"
+    code_namespace: "DagsGroup::WalmartCrawler"
+
+proxy_sets:
+- name: "oxylabs_set"
+  type: "get"
+  private: false
+  proxies:
+  - "login:password@&lt;oxylabs-ip&gt;:60000"
+
+tasks:
+- shop_id: "20607"
+  url: "https://www.walmart.com/cp/electronics/3944"
+  user_data: '{"ranking_limit":100}'
+  module: "placement"         # → calls start_placement_request()
+  strategy: "scheduled-ds"   # only valid strategy for Optimus
+  breadcrumb: "Electronics"
+- shop_id: "20607"
+  url: "https://www.walmart.com/ip/product/123456"
+  user_data: ""
+  module: "pricing"           # → calls start_pricing_request()
+  strategy: "scheduled-ds"</div>
+<div class="label">For parsers — local_config.yml</div>
+<div class="code"><button class="copy-btn" onclick="sgCopy(this)">copy</button>rate_limits:
+- shop_id: "20607"
+  rate_limit: 50
+
+shop_settings:
+  "20607":
+    name: "walmart"
+    code: "walmart_parser"
+    user_code: ""
+
+crawlsets:
+- shop_id: "20607"
+  path: "file:///absolute/path/to/output/1761595906_placement.pf_chain"
+- shop_id: "20607"
+  path: "file:///absolute/path/to/output/1761595906_pricing.pf_chain"</div>
+<div class="info">ℹ Framework auto-detects mode: <code>tasks</code> key = crawler mode. <code>crawlsets</code> key = parser mode.</div>
+<div class="warn">⚠ Parser paths need the <code>file://</code> prefix and must be absolute paths to your .pf_chain files.</div>
+</div>`
+  },
+  {
+    title:"Write your Spider (crawler) or Parser class",
+    sub:"The actual logic — what to fetch and how to extract",
+    num:10,
+    html:`<div class="section"><div class="label">Crawler — main.py skeleton</div>
+<div class="code"><button class="copy-btn" onclick="sgCopy(this)">copy</button>from crawling_framework import Spider, Request, Response
+from crawling_framework.requests import CurlcffiRequest
+from crawling_framework.models import CreateTask
+
+class WalmartCrawler(Spider):
+
+    async def start_placement_request(self, request: Request):
+        # Entry point for module="placement" tasks
+        yield CurlcffiRequest(
+            url=request.url,
+            impersonate="chrome130",
+            callback=self.parse_listing,
+            validate_response=self.validate_request,
+            meta={"user_data": request.user_data}
+        )
+
+    async def validate_request(self, response: Response) -> bool:
+        if response.status != 200: return False
+        if "Access Denied" in response.text: return False
+        return True
+
+    async def parse_listing(self, response: Response):
+        next_url = self.get_next_page(response.text)
+        if next_url:
+            yield CreateTask(url=next_url)
+
+    def get_next_page(self, html: str):
+        # Your pagination logic here
+        pass</div>
+<div class="label">Parser — main.py skeleton</div>
+<div class="code"><button class="copy-btn" onclick="sgCopy(this)">copy</button>from parsing_framework import ParserAbstract
+from parsing_framework.helpers.lxml_parser import LxmlParser
+from parsing_framework.models import ParsedResponse, PlacementProductDataItem
+
+class WalmartParser(ParserAbstract):
+
+    async def start_parse_placement(self, requests):
+        # Entry point for module="placement" crawlsets
+        items = []
+        for request in requests:
+            tree = LxmlParser(request.response)
+            # self.shop.code, self.task.breadcrumb available
+            products = tree.xpath('//div[contains(@class,"product-item")]')
+            for rank, product in enumerate(products, 1):
+                name = product.xpath('.//span[@class="product-title"]/text()')
+                price = product.xpath('.//span[@class="price"]/text()')
+                if name and price:
+                    items.append(
+                        PlacementProductDataItem.from_dict(
+                            request=request, task=self.task,
+                            data={"product_name": name[0], "price": price[0], "rank": rank}
+                        )
+                    )
+        return ParsedResponse(data_items=items, sub_tasks=[])</div>
+<div class="warn">⚠ Always use relative imports: <code>from .utils import MyHelper</code> — NOT <code>from utils import MyHelper</code>. Absolute imports cause module load errors.</div>
+</div>`
+  },
+  {
+    title:"Run locally and verify",
+    sub:"Test the full crawl → parse pipeline on your machine",
+    num:11,
+    html:`<div class="section"><div class="label">Step 1 — run the crawler</div>
+<div class="code"><button class="copy-btn" onclick="sgCopy(this)">copy</button>cd walmart_crawler
+crawling_framework run .</div>
+<div class="tip">✓ Output: <code>./output/&lt;timestamp&gt;_placement.pf_chain</code> and <code>./output/&lt;timestamp&gt;_pricing.pf_chain</code> created locally.</div>
+<div class="label">Step 2 — update parser's local_config.yml with .pf_chain paths</div>
+<div class="code"><button class="copy-btn" onclick="sgCopy(this)">copy</button>crawlsets:
+- shop_id: "20607"
+  path: "file:///absolute/path/to/walmart_crawler/output/1761595906_placement.pf_chain"</div>
+<div class="label">Step 3 — run the parser</div>
+<div class="code"><button class="copy-btn" onclick="sgCopy(this)">copy</button>cd walmart_parser
+parsing_framework run .</div>
+<div class="tip">✓ Output: Parquet files in <code>./crawl_data/data_items/</code> — these contain your structured product data.</div>
+<div class="label">Optional — verify with Optimus Tracer</div>
+<div class="code"><button class="copy-btn" onclick="sgCopy(this)">copy</button># Automates local crawl+parse for big scopes
+# Produces packed (.pf_chain, .parquet) and unpacked (.html, .csv) output
+# See: gitlab.../data-acquisition/optimus-tracer</div>
+<div class="label">Optional — compare against production data</div>
+<div class="code"><button class="copy-btn" onclick="sgCopy(this)">copy</button># Comparer tool: compare local Parquet vs current production data
+# Works for: Pricing, Placement (CR+SR), RRQ modules
+# See: gitlab.../data-acquisition/optimus_migration_tool</div>
+</div>`
+  },
+  {
+    title:"Commit, push, and CI/CD pipeline",
+    sub:"GitLab pipeline runs automatically on push",
+    num:12,
+    html:`<div class="section">
+<div class="warn">⚠ Before committing: confirm all local-only ENVs in <code>config.env</code> are commented out, and <code>--extra-index-url</code> in <code>requirements.txt</code> is commented out.</div>
+<div class="label">Pre-commit checklist</div>
+<ul class="checklist">
+  <li>config.env — all local ENVs commented out</li>
+  <li>requirements.txt — extra-index-url line commented out</li>
+  <li>All imports are relative (from .module import X)</li>
+  <li>Dockerfile — browser lines uncommented if using camoufox/playwright</li>
+  <li>Dockerfile — git added to apt-get install list</li>
+  <li>tests/ — unit tests written and passing</li>
+</ul>
+<div class="label">Push to GitLab</div>
+<div class="code"><button class="copy-btn" onclick="sgCopy(this)">copy</button>git add .
+git commit -m "feat: add walmart placement crawler (DQ-194478)"
+git push origin feature/DQ-194478</div>
+<div class="label">CI/CD pipeline stages — auto-runs</div>
+<div class="grid2">
+  <div class="card"><div class="ck">1. Render version</div><div class="cv">Tags the build with version identifier.</div></div>
+  <div class="card"><div class="ck">2. Build Docker</div><div class="cv">Packages app + dependencies into container image.</div></div>
+  <div class="card"><div class="ck">3. Lint</div><div class="cv">Docker validation, Black, Ruff, Mypy, validate requirements, SonarQube registration.</div></div>
+  <div class="card"><div class="ck">4. Pytest</div><div class="cv">All unit + integration tests. Coverage report generated.</div></div>
+  <div class="card"><div class="ck">5. SonarQube</div><div class="cv">Code quality, security, maintainability analysis.</div></div>
+</div>
+<div class="label">Deployment path after pipeline passes</div>
+<div class="code">Pipeline passes
+     ↓
+Feature environment  →  test and verify
+     ↓
+Create Git tag (release)
+     ↓
+Pre-production  →  final validation
+     ↓
+deploy-da-1-5 GitLab CI pipeline
+     ↓
+Production  (auto-deploys after tag)</div>
+<div class="tip">✓ Setup complete! Your crawler or parser is now live on the Optimus platform.</div>
+</div>`
+  }
+];
+
+let sgCurrent = 0;
+
+function sgRender() {
+  const s = SG_STEPS[sgCurrent];
+  // Progress bar
+  const pb = document.getElementById('sg-progress');
+  pb.innerHTML = SG_STEPS.map((st,i)=>{
+    const cls = i<sgCurrent?'done':i===sgCurrent?'active':'';
+    const lineCls = i<sgCurrent?'done':'';
+    return `<div class="sg-prog-step">
+      <div class="sg-dot ${cls}" onclick="sgGoTo(${i})" title="Step ${st.num}: ${st.title}">${i<sgCurrent?'✓':st.num}</div>
+      ${i<SG_STEPS.length-1?`<div class="sg-line ${lineCls}"></div>`:''}
+    </div>`;
+  }).join('');
+  // Content
+  document.getElementById('sg-content').innerHTML = `
+    <div class="sg-step-header">
+      <div class="sg-step-num">${s.num}</div>
+      <div><div class="sg-step-title">${s.title}</div><div class="sg-step-sub">${s.sub}</div></div>
+    </div>
+    ${s.html}
+  `;
+  // Nav
+  document.getElementById('sg-prev').disabled = sgCurrent===0;
+  const nextBtn = document.getElementById('sg-next');
+  nextBtn.disabled = false;
+  nextBtn.textContent = sgCurrent===SG_STEPS.length-1?'Done ✓':'Next →';
+  nextBtn.className = sgCurrent===SG_STEPS.length-1?'':'primary';
+  document.getElementById('sg-counter').textContent = `Step ${sgCurrent+1} of ${SG_STEPS.length}`;
+  // also highlight sidebar nav items for setup-guide steps
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const navItems = document.querySelectorAll('.nav-item');
+  // mark setup-guide parent and the specific step
+  navItems.forEach(n=>{
+    if(n.getAttribute('onclick')&&n.getAttribute('onclick').includes('setup-guide'))
+      n.classList.add('active');
+  });
+}
+
+function sgNavigate(dir){
+  sgCurrent = Math.max(0, Math.min(SG_STEPS.length-1, sgCurrent+dir));
+  sgRender();
+}
+function sgGoTo(i){
+  sgCurrent=i;
+  sgRender();
+  show('setup-guide');
+}
+function sgCopy(btn){
+  const el = btn.parentElement;
+  const text = (el.innerText||el.textContent).replace(/^copy$/m,'').trim();
+  navigator.clipboard.writeText(text).then(()=>{
+    btn.textContent='copied!';btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='copy';btn.classList.remove('copied')},2000);
+  });
+}
+
+// Init
+sgRender();
+</script>
+</body>
+</html>
